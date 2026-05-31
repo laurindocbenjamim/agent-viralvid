@@ -81,6 +81,7 @@ async def process_video_pipeline(
         for moment in moments:
             clip_filename = f"clip_{moment['id']}.mp4"
             output_path = os.path.join(clips_dir, clip_filename)
+            legendas = moment.get("legendas", [])
             output_path, cover_path = crop_and_add_subtitles(
                 video_path=video_path,
                 start_sec=moment.get("inicio_segundos", 0),
@@ -90,12 +91,14 @@ async def process_video_pipeline(
                 subtitle_style=subtitle_style,
                 subtitle_position=subtitle_position,
                 crop_mode=crop_mode,
+                subtitles=legendas,
             )
             cover_filename = os.path.basename(cover_path)
             rendered_clips.append({
                 "clip_id": moment["id"],
                 "titulo": moment["titulo"],
                 "justificativa": moment.get("justificativa", ""),
+                "legendas": moment.get("legendas", []),
                 "url_path": f"/clips/{task_id}/{clip_filename}",
                 "thumb_url": f"/clips/{task_id}/{cover_filename}",
             })

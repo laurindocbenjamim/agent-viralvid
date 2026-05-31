@@ -5,6 +5,7 @@ pyjwt>=2.8.0
 redis>=5.0.0
 langchain-groq>=0.1.0
 moviepy>=1.0.3,<2.0.0
+Pillow>=10.0.0
 yt-dlp>=2023.7.6
 pytest>=7.4.0
 pytest-asyncio>=0.21.0
@@ -14,6 +15,6 @@ python-dotenv>=1.0.0
 httpx>=0.24.1
 jinja2>=3.1.2
 python-multipart
-celery>=6.0.0
+
 
 

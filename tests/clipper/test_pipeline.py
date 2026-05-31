@@ -51,3 +51,44 @@ async def test_extract_viral_moments_returns_dicts():
     assert len(result) == 2
     assert result[0]["titulo"] == "Gancho"
     assert result[1]["inicio_segundos"] == 60
+
+
+@pytest.mark.asyncio
+async def test_extract_viral_moments_fallback():
+    """extract_viral_moments falls back to the next model if the first fails."""
+    mock_moments = [
+        ViralMoment(id=1, inicio_segundos=5, fim_segundos=35, titulo="Gancho Fallback", justificativa="Forte.")
+    ]
+    mock_response = ViralMomentsResponse(momentos=mock_moments)
+
+    mock_structured_ok = MagicMock()
+    mock_structured_ok.ainvoke = AsyncMock(return_value=mock_response)
+    
+    mock_llm_fail = MagicMock()
+    mock_llm_fail.with_structured_output.side_effect = Exception("Model not found")
+    
+    mock_llm_ok = MagicMock()
+    mock_llm_ok.with_structured_output.return_value = mock_structured_ok
+
+    # Side effect to fail on first model and succeed on fallback
+    def chat_groq_side_effect(model, **kwargs):
+        if model == "meta-llama/llama-4-scout-17b-16e-instruct":
+            return mock_llm_fail
+        return mock_llm_ok
+
+    with patch("backend.app.clipper.pipeline.ChatGroq", side_effect=chat_groq_side_effect), \
+         patch("backend.app.clipper.pipeline.settings") as mock_settings:
+        mock_settings.LLMMODEL = "meta-llama/llama-4-scout-17b-16e-instruct"
+        mock_settings.GROQ_API_KEY = "test_key"
+        
+        result = await extract_viral_moments(
+            transcript="Teste de transcrição.",
+            video_language="pt-BR",
+            clip_objective="Viral/Engraçado",
+            target_duration="30-60",
+            max_clips=1,
+        )
+
+    assert len(result) == 1
+    assert result[0]["titulo"] == "Gancho Fallback"
+
