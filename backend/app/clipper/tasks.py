@@ -6,6 +6,7 @@ import logging
 import os
 
 from backend.app.clipper.pipeline import extract_viral_moments
+from backend.app.clipper.transcription import transcribe_clip
 from backend.app.clipper.video_editor import crop_and_add_subtitles, download_video
 from backend.app.core.database import (
     cache_results,
@@ -81,24 +82,34 @@ async def process_video_pipeline(
         for moment in moments:
             clip_filename = f"clip_{moment['id']}.mp4"
             output_path = os.path.join(clips_dir, clip_filename)
-            legendas = moment.get("legendas", [])
+            start_sec = moment.get("inicio_segundos", 0)
+            end_sec = moment.get("fim_segundos", 30)
+
+            # Real speech-to-text with word-level timestamps
+            await _update(f"Transcrevendo clipe {moment['id']}...")
+            try:
+                subtitles = transcribe_clip(video_path, start_sec, end_sec)
+            except Exception as exc:
+                logger.warning("Transcription failed for clip %d: %s", moment["id"], exc)
+                subtitles = []
+
             output_path, cover_path = crop_and_add_subtitles(
                 video_path=video_path,
-                start_sec=moment.get("inicio_segundos", 0),
-                end_sec=moment.get("fim_segundos", 30),
+                start_sec=start_sec,
+                end_sec=end_sec,
                 output_path=output_path,
                 subtitle_text=moment.get("titulo", "Viral"),
                 subtitle_style=subtitle_style,
                 subtitle_position=subtitle_position,
                 crop_mode=crop_mode,
-                subtitles=legendas,
+                subtitles=subtitles,
             )
             cover_filename = os.path.basename(cover_path)
             rendered_clips.append({
                 "clip_id": moment["id"],
                 "titulo": moment["titulo"],
                 "justificativa": moment.get("justificativa", ""),
-                "legendas": moment.get("legendas", []),
+                "transcription": subtitles,
                 "url_path": f"/clips/{task_id}/{clip_filename}",
                 "thumb_url": f"/clips/{task_id}/{cover_filename}",
             })

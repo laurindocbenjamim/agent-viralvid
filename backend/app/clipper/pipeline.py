@@ -12,14 +12,6 @@ from backend.app.core.config import settings
 logger = logging.getLogger(__name__)
 
 
-class SubtitlePhrase(BaseModel):
-    """A single timed subtitle phrase for dynamic caption rendering."""
-
-    text: str = Field(..., description="The subtitle text for this phrase (1-6 words, highlighting key words).")
-    start_offset: float = Field(..., ge=0, description="Start offset in seconds relative to clip start.")
-    end_offset: float = Field(..., ge=0.1, description="End offset in seconds relative to clip start.")
-
-
 class ViralMoment(BaseModel):
     """Schema for a single AI-identified viral video segment."""
 
@@ -28,11 +20,6 @@ class ViralMoment(BaseModel):
     fim_segundos: int = Field(..., ge=1, description="End timestamp in seconds.")
     titulo: str = Field(..., description="High-impact TikTok hook title.")
     justificativa: str = Field(..., description="Why this moment is viral.")
-    legendas: List[SubtitlePhrase] = Field(
-        default_factory=list,
-        description="Timed subtitle phrases covering the full clip duration. "
-                    "Each phrase is 1-6 words highlighting important words from the transcript.",
-    )
 
 
 class ViralMomentsResponse(BaseModel):
@@ -85,15 +72,7 @@ async def extract_viral_moments(
         f"You must strive to find all {max_clips} segments unless the video is far too short. "
         f"Each segment must be {duration_desc} seconds long. "
         f"Return only segments with exact second timestamps. "
-        f"Write all titles, justifications, and subtitles in the same language as the transcript.\n\n"
-        f"For each segment, you MUST also provide 'legendas' — a list of timed subtitle phrases "
-        f"that cover the ENTIRE clip duration from start to end. Rules for legendas:\n"
-        f"- Each phrase must be 1 to 6 words, highlighting the most important or impactful words.\n"
-        f"- Phrases must be chronologically ordered and cover the full duration with no large gaps.\n"
-        f"- start_offset is relative to the clip start (0 = beginning of clip).\n"
-        f"- end_offset must be slightly after start_offset (at least 0.5s per phrase).\n"
-        f"- Aim for roughly 2-4 seconds per phrase, adapting to the transcript pacing.\n"
-        f"- Use UPPERCASE for emphasis words that are key to the message."
+        f"Write all titles and justifications in the same language as the transcript."
     )
 
     # Candidates to try: primary configured model first, then standard reliable fallbacks

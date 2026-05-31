@@ -44,6 +44,22 @@ SUBTITLE_POSITIONS: Dict[str, float] = {"bottom": 0.72, "center": 0.45, "top": 0
 PADDING_X = 32
 PADDING_Y = 16
 
+# Common stop words to skip when highlighting
+_STOP_WORDS = frozenset({
+    "a", "an", "the", "and", "or", "but", "in", "on", "at", "to", "for",
+    "of", "with", "by", "is", "it", "as", "be", "was", "are", "been",
+    "do", "did", "has", "have", "had", "not", "no", "so", "if", "my",
+    "your", "his", "her", "our", "their", "this", "that", "these", "those",
+    "i", "me", "we", "us", "you", "he", "she", "they", "them", "its",
+    "what", "which", "who", "whom", "how", "when", "where", "why",
+    "am", "can", "could", "will", "would", "shall", "should", "may",
+    "might", "must", "need", "there", "here", "then", "than", "too",
+    "very", "just", "about", "also", "only", "even", "still", "already",
+    "from", "into", "over", "after", "before", "between", "under",
+    "up", "down", "out", "off", "all", "each", "every", "some", "any",
+    "most", "much", "many", "few", "own", "same", "other", "such",
+})
+
 
 def sanitize_youtube_url(url: str) -> str:
     if not YT_PATTERN.match(url):
@@ -85,6 +101,25 @@ def _load_font(size: int) -> ImageFont.FreeTypeFont:
     return ImageFont.load_default()
 
 
+def _is_important_word(word: str, position: int, total_words: int) -> bool:
+    """Determine if a word should be highlighted for emphasis.
+
+    Highlights words that are:
+    - Longer than 4 characters (content words)
+    - Not common stop words
+    - The first or last word of the phrase (position emphasis)
+    """
+    clean = re.sub(r"[^a-zA-ZÀ-ÿ]", "", word.lower())
+    if len(clean) <= 4:
+        return False
+    if clean in _STOP_WORDS:
+        return False
+    # First and last words get emphasis
+    if position == 0 or position == total_words - 1:
+        return True
+    return True
+
+
 def _wrap_text(text: str, font: ImageFont.FreeTypeFont, max_width: int) -> List[str]:
     """Word-wrap text so each line fits within max_width pixels."""
     words = text.split()
@@ -114,9 +149,9 @@ def _render_subtitle_frame(
 ) -> np.ndarray:
     """Render subtitle phrases onto a frame at time t using Pillow.
 
-    Only the phrase whose time window contains t is rendered.  UPPERCASE
-    tokens are drawn in ``highlight_color`` for emphasis.  Text is always
-    centred horizontally and stays within the visible area.
+    Only the phrase whose time window contains t is rendered.  Important
+    content words are drawn in ``highlight_color`` for emphasis.  Text is
+    always centred horizontally and stays within the visible area.
     """
     active = None
     for p in phrases:
@@ -139,7 +174,7 @@ def _render_subtitle_frame(
     stroke_w = style["stroke_width"]
 
     draw_area_w = target_w - 2 * PADDING_X
-    lines = _wrap_text(raw_text.upper(), font, draw_area_w)
+    lines = _wrap_text(raw_text, font, draw_area_w)
 
     # Measure total text block height
     line_heights = []
@@ -165,19 +200,20 @@ def _render_subtitle_frame(
         lw = bbox[2] - bbox[0]
         x = (target_w - lw) // 2  # centred horizontally
 
-        # Draw stroke (outline)
+        # Draw stroke (outline) for the whole line
         if stroke_w > 0:
             for dx in range(-stroke_w, stroke_w + 1):
                 for dy in range(-stroke_w, stroke_w + 1):
                     if dx * dx + dy * dy <= stroke_w * stroke_w:
                         draw.text((x + dx, y_cursor + dy), line, font=font, fill=(0, 0, 0, 255))
 
-        # Draw text — highlight uppercase words differently
+        # Draw text — highlight important words
         words = line.split()
+        total = len(words)
         x_cursor = x
-        for word in words:
-            is_hl = word.isupper() and len(word) > 1
-            color = hl_color if is_hl else base_color
+        for idx, word in enumerate(words):
+            important = _is_important_word(word, idx, total)
+            color = hl_color if important else base_color
             # Stroke for each word
             if stroke_w > 0:
                 for dx in range(-stroke_w, stroke_w + 1):
