@@ -349,12 +349,26 @@
         </select>
       </div>
     </div>
+    <div class="field">
+      <label for="targetPlatform">Target Platform</label>
+      <select id="targetPlatform">
+        <option value="tiktok" selected>🎵 TikTok (15-60s)</option>
+        <option value="youtube_shorts">▶️ YouTube Shorts (15-60s)</option>
+        <option value="instagram_reels">📸 Instagram Reels (15-90s)</option>
+        <option value="facebook_reels">📘 Facebook Reels (15-90s)</option>
+        <option value="x">🐦 X (Twitter) (30-120s)</option>
+        <option value="custom">⚙️ Custom</option>
+      </select>
+    </div>
     <div class="grid-2">
       <div class="field">
         <label for="targetDuration">Target Duration (seconds)</label>
         <select id="targetDuration">
           <option value="15-30">⚡ 15–30 s (Short)</option>
-          <option value="30-60" selected>🎯 30–60 s (Default)</option>
+          <option value="30-60">🎯 30–60 s</option>
+          <option value="15-60" selected>📱 15-60 s (TikTok/Shorts)</option>
+          <option value="15-90">📸 15-90 s (Reels)</option>
+          <option value="30-120">🐦 30-120 s (X)</option>
           <option value="60-90">🎬 60–90 s (Long)</option>
         </select>
       </div>
@@ -382,13 +396,17 @@
         <div class="pill" data-style="Cyberpunk">🟢 Cyberpunk</div>
       </div>
     </div>
-    <div class="field" style="margin-bottom:0">
+    <div class="field">
       <label>Subtitle Position</label>
       <div class="pos-group" id="posButtons">
-        <button class="pos-btn" data-pos="top">Top</button>
-        <button class="pos-btn" data-pos="center">Center</button>
+        <button class="pos-btn" data-pos="top">Above Center</button>
+        <button class="pos-btn" data-pos="center" title="Warning: May obstruct faces; best for faceless or scenery videos">Center</button>
         <button class="pos-btn active" data-pos="bottom">Bottom</button>
       </div>
+    </div>
+    <div class="field" style="margin-bottom:0">
+      <label for="fontSizeInput">Font Size: <span id="fontSizeVal">Theme Default</span></label>
+      <input type="range" id="fontSizeInput" min="0" max="120" value="0" step="1" style="width: 100%; margin-top: 6px;" />
     </div>
   </div>
 
@@ -447,6 +465,15 @@
     });
   });
 
+  // ── Target Platform logic ────────────────────────────────
+  document.getElementById('targetPlatform').addEventListener('change', (e) => {
+    const val = e.target.value;
+    const dur = document.getElementById('targetDuration');
+    if (val === 'tiktok' || val === 'youtube_shorts') dur.value = '15-60';
+    else if (val === 'instagram_reels' || val === 'facebook_reels') dur.value = '15-90';
+    else if (val === 'x') dur.value = '30-120';
+  });
+
   // ── Position buttons ─────────────────────────────────────
   document.querySelectorAll('.pos-btn').forEach(btn => {
     btn.addEventListener('click', () => {
@@ -454,6 +481,14 @@
       btn.classList.add('active');
       selectedPos = btn.dataset.pos;
     });
+  });
+
+  // ── Font size slider listener ────────────────────────────
+  const fontSizeInput = document.getElementById('fontSizeInput');
+  const fontSizeVal = document.getElementById('fontSizeVal');
+  fontSizeInput.addEventListener('input', () => {
+    const val = parseInt(fontSizeInput.value);
+    fontSizeVal.textContent = val === 0 ? 'Theme Default' : `${val}px`;
   });
 
   // ── Session helper ───────────────────────────────────────
@@ -485,6 +520,7 @@
 
     let res;
     try {
+      const fontSize = parseInt(fontSizeInput.value);
       if (isUpload) {
         const formData = new FormData();
         formData.append('video_file', uploadedFile);
@@ -495,6 +531,9 @@
         formData.append('subtitle_style', selectedStyle);
         formData.append('subtitle_position', selectedPos);
         formData.append('crop_mode', 'fit'); // use fit to prevent cutoff
+        if (fontSize > 0) {
+          formData.append('subtitle_font_size', fontSize);
+        }
 
         res = await fetch(`${API}/api/clipper/upload`, {
           method: 'POST', credentials: 'include',
@@ -511,6 +550,9 @@
           subtitle_position: selectedPos,
           crop_mode:         'fit', // use fit to prevent cutoff
         };
+        if (fontSize > 0) {
+          payload.subtitle_font_size = fontSize;
+        }
 
         res = await fetch(`${API}/api/clipper/submit`, {
           method: 'POST', credentials: 'include',

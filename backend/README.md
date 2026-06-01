@@ -1,10 +1,29 @@
 # tiktok-clipper-ai Backend Service
 
-A high-performance automated video clipper backend that downloads horizontal YouTube videos, analyzes transcripts using LangChain + Groq LLM to isolate high-engagement viral clips, and crops them into a vertical 9:16 layout complete with large, dynamic yellow subtitles.
+A high-performance automated video clipper backend that downloads horizontal YouTube videos or accepts local uploads, analyzes transcripts using LangChain + Groq LLM to isolate high-engagement viral clips, reframes them into a vertical 9:16 layout, and overlays dynamic, customizable subtitles.
 
 ---
 
-## Technical Architecture & Core Principles
+## 🚀 What Users Can Do With This App
+
+With **ViralVid Clipper**, users can effortlessly transform long-form landscape video content into viral vertical clips tailored for platforms like TikTok, YouTube Shorts, Instagram Reels, and X:
+
+*   **Dual Video Inputs:** Submit long-form YouTube URLs or directly upload local video files.
+*   **AI-Powered Virality Analysis:** The AI isolates highly shareable moments based on target clip durations (e.g., 30–60s) and content objectives (e.g., Viral/Engraçado).
+*   **Dynamic Subtitle Styling:** Select from pre-configured visual themes matching popular social media trends:
+    *   **⚡ TikTok Bold:** Vibrant yellow text with heavy black outlines for maximum retention.
+    *   **✨ Minimalista:** Elegant white text with a clean, low-profile outline.
+    *   **🟢 Cyberpunk:** Futuristic neon green text with striking pink highlight overlays.
+*   **Custom Font-Size Controller:** Adjust the size of the subtitle legends using a range slider (`20px` to `120px`), or keep it at `Theme Default` to automatically use the preset theme sizes.
+*   **Obstruction-Free Safe Zones:** Choose subtitle vertical placement that avoids platform UI obstructions and covers:
+    *   **Above Center (70% down):** Positions text just under the speaker's face while clearing navigation headers.
+    *   **Center (45% down):** Screen-centered placement (Note: May obstruct faces; best for faceless/scenery videos).
+    *   **Bottom (78% down):** Positions text at the lower end of the safe region, high enough to clear bottom descriptions, music tags, and controls.
+*   **Automatic 9:16 Cropping & Fitment:** Crops landscape 16:9 video content to standard 9:16 vertical layouts using smart-fit mode to prevent visual cutting.
+
+---
+
+## 🏛️ Technical Architecture & Core Principles
 
 - **Modular Monolith Layout**: Highly cohesive internal domain contexts structured securely under FastAPI.
 - **Secure-by-Design Session Cookies**: Uses HttpOnly, Lax SameSite, and environment-driven Secure flags for absolute JWT storage safety.
@@ -14,7 +33,7 @@ A high-performance automated video clipper backend that downloads horizontal You
 
 ---
 
-## Environment Variables (.env)
+## ⚙️ Environment Variables (.env)
 
 A `.env` file should be placed at the project root with the following configuration:
 
@@ -29,7 +48,7 @@ SECURE_COOKIE=False  # Set to True in production (forces HTTPS)
 
 ---
 
-## Local Development & Dependency Setup
+## 🛠️ Local Development & Dependency Setup
 
 ### 1. Prerequisites
 - **Python**: version 3.10 or higher.
@@ -50,7 +69,7 @@ pip install -r requirements.txt
 
 ---
 
-## Running the Application
+## 🏃 Running the Application
 
 To launch the FastAPI development server locally, execute:
 
@@ -58,9 +77,11 @@ To launch the FastAPI development server locally, execute:
 uvicorn backend.app.main:app --reload --host 127.0.0.1 --port 8000
 ```
 
+Once running, access the web client directly at `http://127.0.0.1:8000`.
+
 ---
 
-## Automated Test Suites
+## 🧪 Automated Test Suites
 
 ### 1. Execute Unit & Integration Tests
 We provide a comprehensive, fully mocked unit and integration test suite:
@@ -70,7 +91,7 @@ python3 -m pytest tests/ -vv
 ```
 
 ### 2. Execute Automated Concurrency Stress Tests
-Fulfills Rule 10 requirements by evaluating in-memory ASGI request latencies under concurrent load spikes:
+Fulfills performance requirements by evaluating in-memory ASGI request latencies under concurrent load spikes:
 
 ```bash
 python3 -m pytest tests/stress_test.py -vv -s

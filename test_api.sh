@@ -59,19 +59,20 @@ ok "Session created: $SESSION_ID"
 # -----------------------------------------------------------
 # 3. Submit a valid job
 # -----------------------------------------------------------
-info "3. Submitting clipping job for https://youtu.be/okHkUIW46ks ..."
+info "3. Submitting clipping job for https://youtu.be/vfu2zKpQjfE ..."
 SUBMIT_RESP=$(curl -sf -b "$COOKIE_JAR" -X POST "$BASE_URL/api/clipper/submit" \
   -H "Content-Type: application/json" \
   -d '{
-    "video_source": "https://youtu.be/okHkUIW46ks",
-    "video_language": "pt-BR",
+    "video_source": "https://youtu.be/i5UJ3ugs0dY",
+    "video_language": "pt-BR",  
     "clip_objective": "Viral/Engraçado",
-    "target_duration": "30-60",
+    "target_duration": "15-30",
     "max_clips": 3,
-    "subtitle_style": "TikTok Bold",
+    "subtitle_style": "Minimalista",
     "subtitle_position": "bottom",
     "crop_mode": "center"
   }') || { fail "Job submission failed"; exit 1; }
+
 
 TASK_ID=$(echo "$SUBMIT_RESP" | python3 -c "import json,sys; print(json.load(sys.stdin)['task_id'])")
 STATUS=$(echo "$SUBMIT_RESP" | python3 -c "import json,sys; print(json.load(sys.stdin)['status'])")

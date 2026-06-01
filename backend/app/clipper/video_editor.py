@@ -20,26 +20,26 @@ SUBTITLE_STYLES: Dict[str, Dict[str, Any]] = {
         "color": (255, 255, 0),
         "highlight_color": (255, 255, 255),
         "stroke_color": (0, 0, 0),
-        "font_size": 52,
+        "font_size": 76,
         "stroke_width": 3,
     },
     "Minimalista": {
         "color": (255, 255, 255),
         "highlight_color": (255, 255, 0),
         "stroke_color": (0, 0, 0),
-        "font_size": 44,
+        "font_size": 56,
         "stroke_width": 1,
     },
     "Cyberpunk": {
         "color": (57, 255, 20),
         "highlight_color": (255, 0, 255),
         "stroke_color": (0, 0, 0),
-        "font_size": 52,
+        "font_size": 68,
         "stroke_width": 3,
     },
 }
 
-SUBTITLE_POSITIONS: Dict[str, float] = {"bottom": 0.72, "center": 0.45, "top": 0.18}
+SUBTITLE_POSITIONS: Dict[str, float] = {"bottom": 0.78, "center": 0.45, "top": 0.70}
 
 PADDING_X = 32
 PADDING_Y = 16
@@ -90,6 +90,9 @@ def download_video(url: str, output_dir: str) -> str:
 def _load_font(size: int) -> ImageFont.FreeTypeFont:
     """Try to load a bold TrueType font, falling back to default."""
     candidates = [
+        "/usr/share/fonts/truetype/montserrat/Montserrat-Black.ttf",
+        "/usr/share/fonts/truetype/msttcorefonts/Impact.ttf",
+        "/usr/share/fonts/truetype/msttcorefonts/Arial_Black.ttf",
         "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
         "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf",
         "/usr/share/fonts/truetype/freefont/FreeSansBold.ttf",
@@ -121,20 +124,26 @@ def _is_important_word(word: str, position: int, total_words: int) -> bool:
 
 
 def _wrap_text(text: str, font: ImageFont.FreeTypeFont, max_width: int) -> List[str]:
-    """Word-wrap text so each line fits within max_width pixels."""
+    """Word-wrap text so each line fits within max_width pixels, max 3 words per line."""
     words = text.split()
     lines: List[str] = []
-    current = ""
+    current_line_words: List[str] = []
+    
     for word in words:
-        test = f"{current} {word}".strip()
-        bbox = font.getbbox(test)
-        if bbox[2] - bbox[0] > max_width and current:
-            lines.append(current)
-            current = word
+        test_line = " ".join(current_line_words + [word])
+        bbox = font.getbbox(test_line)
+        line_width = bbox[2] - bbox[0]
+        
+        # Line break if width exceeded OR word count reaches 3
+        if current_line_words and (line_width > max_width or len(current_line_words) >= 3):
+            lines.append(" ".join(current_line_words))
+            current_line_words = [word]
         else:
-            current = test
-    if current:
-        lines.append(current)
+            current_line_words.append(word)
+            
+    if current_line_words:
+        lines.append(" ".join(current_line_words))
+        
     return lines or [""]
 
 
@@ -163,7 +172,7 @@ def _render_subtitle_frame(
     if active is None:
         return frame
 
-    raw_text = (active.get("text") or "").strip()
+    raw_text = (active.get("text") or "").strip().upper()
     if not raw_text:
         return frame
 
@@ -243,6 +252,7 @@ def crop_and_add_subtitles(
     subtitle_position: Literal["bottom", "center", "top"] = "bottom",
     crop_mode: Literal["center", "fit", "smart_track"] = "fit",
     subtitles: Optional[List[Dict[str, Any]]] = None,
+    subtitle_font_size: Optional[int] = None,
 ) -> Tuple[str, str]:
     """Crop a horizontal clip to 9:16 and overlay centred subtitles.
 
@@ -250,7 +260,9 @@ def crop_and_add_subtitles(
     centred horizontally and positioned vertically at *subtitle_position*.
     Only one phrase is visible at a time so they never overlap.
     """
-    style = SUBTITLE_STYLES.get(subtitle_style, SUBTITLE_STYLES["TikTok Bold"])
+    style = SUBTITLE_STYLES.get(subtitle_style, SUBTITLE_STYLES["TikTok Bold"]).copy()
+    if subtitle_font_size is not None:
+        style["font_size"] = subtitle_font_size
     position_ratio = SUBTITLE_POSITIONS.get(subtitle_position, 0.72)
 
     parent = os.path.dirname(output_path)

@@ -46,6 +46,7 @@ class ClipperSubmitPayload(BaseModel):
     subtitle_style: str = Field("TikTok Bold")
     subtitle_position: str = Field("bottom")
     crop_mode: str = Field("fit")
+    subtitle_font_size: Optional[int] = Field(None, ge=10, le=150, description="Custom subtitle font size.")
 
     @field_validator("clip_objective")
     @classmethod
@@ -125,6 +126,7 @@ async def submit_job(
         subtitle_style=payload.subtitle_style,
         subtitle_position=payload.subtitle_position,
         crop_mode=payload.crop_mode,
+        subtitle_font_size=payload.subtitle_font_size,
     )
     return {"task_id": task_id, "status": "Baixando"}
 
@@ -140,6 +142,7 @@ async def upload_job(
     subtitle_style: str = Form("TikTok Bold"),
     subtitle_position: str = Form("bottom"),
     crop_mode: str = Form("fit"),
+    subtitle_font_size: Optional[int] = Form(None),
     session: str = Depends(get_session_from_cookie),
 ) -> Dict[str, str]:
     """Submit a local video file for clipping."""
@@ -166,6 +169,7 @@ async def upload_job(
         subtitle_style=subtitle_style,
         subtitle_position=subtitle_position,
         crop_mode=crop_mode,
+        subtitle_font_size=subtitle_font_size,
     )
     return {"task_id": task_id, "status": "Processando"}
 

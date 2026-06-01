@@ -109,3 +109,39 @@ def test_get_status_unknown_task_returns_404(mock_status):
     mock_status.return_value = None
     response = client.get("/api/clipper/status/nonexistent-id")
     assert response.status_code == 404
+
+
+def test_submit_invalid_subtitle_font_size_returns_422():
+    """Submitting an invalid subtitle_font_size (e.g. out of range) returns 422."""
+    c = _authenticated_client()
+    response = c.post(
+        "/api/clipper/submit",
+        json={
+            "video_source": "https://www.youtube.com/watch?v=test",
+            "video_language": "en-US",
+            "subtitle_font_size": 200,  # Max is 150
+        },
+    )
+    assert response.status_code == 422
+
+
+def test_submit_valid_subtitle_font_size_returns_202():
+    """Submitting a valid subtitle_font_size returns 202."""
+    c = _authenticated_client()
+    with patch("backend.app.clipper.routes.process_video_pipeline") as mock_pipeline, \
+         patch("backend.app.clipper.routes.set_task_status") as mock_redis, \
+         patch("backend.app.clipper.routes.save_sqlite_task") as mock_sqlite:
+        mock_redis.return_value = None
+        mock_sqlite.return_value = None
+        mock_pipeline.return_value = None
+
+        response = c.post(
+            "/api/clipper/submit",
+            json={
+                "video_source": "https://www.youtube.com/watch?v=test",
+                "video_language": "en-US",
+                "subtitle_font_size": 50,
+            },
+        )
+        assert response.status_code == 202
+

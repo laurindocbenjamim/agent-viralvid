@@ -4,6 +4,7 @@
 import json
 import logging
 import os
+from typing import Optional
 
 from backend.app.clipper.pipeline import extract_viral_moments
 from backend.app.clipper.transcription import transcribe_clip
@@ -29,6 +30,7 @@ async def process_video_pipeline(
     subtitle_style: str,
     subtitle_position: str,
     crop_mode: str = "fit",
+    subtitle_font_size: Optional[int] = None,
 ) -> None:
     """Orchestrate the full video clipping pipeline as a background task.
 
@@ -103,6 +105,7 @@ async def process_video_pipeline(
                 subtitle_position=subtitle_position,
                 crop_mode=crop_mode,
                 subtitles=subtitles,
+                subtitle_font_size=subtitle_font_size,
             )
             cover_filename = os.path.basename(cover_path)
             rendered_clips.append({
